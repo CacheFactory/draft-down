@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+  <asset>
+    <contributor><authoring_tool>Legacy Modeler 2024</authoring_tool></contributor>
+    <unit meter="0.0254" name="inch" />
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="red-effect">
+      <profile_COMMON><technique sid="COMMON"><lambert>
+        <diffuse><color>0.8 0.1 0.1 1</color></diffuse>
+      </lambert></technique></profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_materials>
+    <material id="red-material" name="RedPaint"><instance_effect url="#red-effect" /></material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="box-geom" name="Box">
+      <mesh>
+        <source id="box-pos">
+          <float_array id="box-pos-array" count="24">0 0 0 2 0 0 2 2 0 0 2 0 0 0 2 2 0 2 2 2 2 0 2 2</float_array>
+          <technique_common><accessor source="#box-pos-array" count="8" stride="3">
+            <param name="X" type="float"/><param name="Y" type="float"/><param name="Z" type="float"/>
+          </accessor></technique_common>
+        </source>
+        <vertices id="box-verts"><input semantic="POSITION" source="#box-pos"/></vertices>
+        <triangles material="red-material" count="12">
+          <input semantic="VERTEX" source="#box-verts" offset="0"/>
+          <p>0 2 1 0 3 2 4 5 6 4 6 7 0 1 5 0 5 4 1 2 6 1 6 5 2 3 7 2 7 6 3 0 4 3 4 7</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="scene" name="scene">
+      <node id="box-node" name="BoxNode">
+        <instance_geometry url="#box-geom">
+          <bind_material><technique_common>
+            <instance_material symbol="red-material" target="#red-material"/>
+          </technique_common></bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene><instance_visual_scene url="#scene"/></scene>
+</COLLADA>

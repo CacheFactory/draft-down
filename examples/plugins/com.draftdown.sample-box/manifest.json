@@ -1,0 +1,8 @@
+{
+  "id": "com.draftdown.sample-box",
+  "name": "Make Box",
+  "version": "1.0.0",
+  "description": "Adds a Plugins → Make Box menu item to the active model.",
+  "author": "DraftDown Examples",
+  "entry": "sample-box.js"
+}

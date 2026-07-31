@@ -1,0 +1,31 @@
+# Continuous integration: typecheck + unit/integration tests on every push/PR.
+# Playwright Electron e2e tests are NOT run here — they need a display server
+# and are still order-sensitive; run them locally via `npx playwright test`.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Tests (jest)
+        run: npx jest --ci

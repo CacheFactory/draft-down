@@ -1,0 +1,121 @@
+/* @archigraph window.main */
+/* SketchCraft Global Styles */
+
+:root {
+  /* Dark theme (default) */
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2d2d2d;
+  --bg-hover: #3e3e3e;
+  --bg-active: #094771;
+  --text-primary: #cccccc;
+  --text-secondary: #999999;
+  --text-muted: #666666;
+  --border-color: #3e3e3e;
+  --border-light: #4e4e4e;
+  --accent: #0078d4;
+  --accent-hover: #1a8adf;
+  --danger: #f44336;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --toolbar-height: 36px;
+  --sidebar-width: 40px;
+  --panel-width: 260px;
+  --statusbar-height: 28px;
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size: 12px;
+  --font-size-small: 11px;
+
+  /* Axis colors */
+  --axis-x: #ff4444;
+  --axis-y: #44cc44;
+  --axis-z: #4488ff;
+}
+
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f3f3;
+  --bg-tertiary: #e8e8e8;
+  --bg-hover: #e0e0e0;
+  --bg-active: #cce5ff;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --border-color: #d4d4d4;
+  --border-light: #e0e0e0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  user-select: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 3px;
+}
+
+button:hover {
+  background: var(--bg-hover);
+}
+
+button.active {
+  background: var(--bg-active);
+  color: #ffffff;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+input, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 2px 6px;
+  outline: none;
+}
+
+input:focus, select:focus {
+  border-color: var(--accent);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-light);
+}

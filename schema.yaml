@@ -1,0 +1,1158 @@
+schemaVersion: "1.0"
+
+meta:
+  name: "AWS Web App Schema"
+  description: "Architecture schema for cloud-hosted web applications on AWS — SPA, API, auth, data, messaging, and monitoring"
+  version: "1.0"
+
+layers:
+  product:
+    label: "Product"
+    order: 10
+    ui: { color: "#42A5F5" }
+  logical:
+    label: "Logical"
+    order: 20
+    ui: { color: "#9C27B0" }
+  api:
+    label: "API"
+    order: 30
+    ui: { color: "#E91E63" }
+  runtime:
+    label: "Runtime"
+    order: 40
+    ui: { color: "#FF9800" }
+  data:
+    label: "Data"
+    order: 50
+    ui: { color: "#795548" }
+  messaging:
+    label: "Messaging"
+    order: 60
+    ui: { color: "#FF4F8B" }
+  security:
+    label: "Security"
+    order: 70
+    ui: { color: "#F44336" }
+  monitoring:
+    label: "Monitoring"
+    order: 80
+    ui: { color: "#4CAF50" }
+
+nodeKinds:
+  actor:
+    label: "Actor"
+    description: "End user or external system"
+    ui: { shape: "ellipse", color: "#42A5F5" }
+  ui:
+    label: "UI"
+    description: "SPA application or screen — parent UIs represent the app shell, children are pages and sub-pages"
+    recursive: true
+    implementable: true
+    ui: { shape: "round-rectangle", color: "#42A5F5" }
+  component:
+    label: "Component"
+    description: "Logical service or module"
+    ui: { shape: "ellipse", color: "#9C27B0" }
+  interface:
+    label: "Interface"
+    description: "API endpoint (REST, GraphQL)"
+    ui: { shape: "diamond", color: "#E91E63" }
+  datastore:
+    label: "Datastore"
+    description: "Database, cache, or object store"
+    ui: { shape: "hexagon", color: "#795548" }
+  queue:
+    label: "Queue"
+    description: "Message queue or event bus"
+    ui: { shape: "barrel", color: "#FF4F8B" }
+  cdn:
+    label: "CDN"
+    description: "CloudFront or CDN distribution"
+    ui: { shape: "round-rectangle", color: "#8C4FFF" }
+  gateway:
+    label: "Gateway"
+    description: "API Gateway or load balancer"
+    ui: { shape: "diamond", color: "#FF9800" }
+  lambda:
+    label: "Lambda"
+    description: "Serverless function — custom code that runs in AWS Lambda"
+    implementable: true
+    ui: { shape: "round-rectangle", color: "#FF9800" }
+  container:
+    label: "Container"
+    description: "Containerized application — parent containers represent the deployable app, children are internal services"
+    recursive: true
+    implementable: true
+    ui: { shape: "ellipse", color: "#FF9800" }
+  auth:
+    label: "Auth"
+    description: "Cognito or auth provider"
+    ui: { shape: "ellipse", color: "#DD344C" }
+  boundary:
+    label: "Boundary"
+    description: "Trust or network boundary"
+    ui: { shape: "rectangle", color: "#607D8B" }
+  infrastructure:
+    label: "Infrastructure"
+    description: "Infrastructure-as-code project — generates Terraform, CDK, or CloudFormation for provisioning AWS resources plus deployment and teardown scripts"
+    implementable: true
+    ui: { shape: "round-rectangle", color: "#FF6F00" }
+  artifact:
+    label: "Artifact"
+    description: "Design doc, spec, or diagram"
+    ui: { shape: "round-tag", color: "#78909C" }
+
+edgeKinds:
+  uses:
+    label: "Uses"
+    ui: { color: "#42A5F5" }
+  triggers:
+    label: "Triggers"
+    ui: { color: "#FF9800" }
+  routes:
+    label: "Routes"
+    ui: { color: "#2196F3" }
+  serves:
+    label: "Serves"
+    ui: { color: "#8C4FFF" }
+  calls:
+    label: "Calls"
+    ui: { color: "#9C27B0" }
+  reads:
+    label: "Reads"
+    ui: { color: "#4CAF50" }
+  writes:
+    label: "Writes"
+    ui: { color: "#F44336" }
+  publishes:
+    label: "Publishes"
+    ui: { color: "#FF4F8B" }
+  subscribes:
+    label: "Subscribes"
+    ui: { color: "#00BCD4" }
+  authenticates:
+    label: "Authenticates"
+    ui: { color: "#E91E63" }
+  authorizes:
+    label: "Authorizes"
+    ui: { color: "#DD344C" }
+  implements:
+    label: "Implements"
+    ui: { color: "#607D8B" }
+  references:
+    label: "References"
+    ui: { color: "#78909C" }
+  contains:
+    label: "Contains"
+    ui: { color: "#90A4AE" }
+  provisions:
+    label: "Provisions"
+    ui: { color: "#FF6F00" }
+  emits:
+    label: "Emits"
+    ui: { color: "#4CAF50" }
+
+connectionRules:
+  uses:
+    - from: [actor]
+      to: [ui]
+  triggers:
+    - from: [ui]
+      to: [interface]
+  routes:
+    - from: [cdn, gateway]
+      to: [gateway, lambda, container, datastore]
+  serves:
+    - from: [cdn]
+      to: [ui, component]
+  calls:
+    - from: [component, lambda, container, gateway]
+      to: [component, lambda, container, interface]
+  reads:
+    - from: [component, lambda, container]
+      to: [datastore]
+  writes:
+    - from: [component, lambda, container]
+      to: [datastore]
+  publishes:
+    - from: [component, lambda, container]
+      to: [queue]
+  subscribes:
+    - from: [component, lambda, container]
+      to: [queue]
+  authenticates:
+    - from: [ui, gateway]
+      to: [auth]
+  authorizes:
+    - from: [gateway]
+      to: [auth]
+  implements:
+    - from: [component, lambda, container]
+      to: [interface, component, lambda, container]
+  references:
+    - from: [interface, component, artifact]
+      to: [artifact]
+  provisions:
+    - from: [infrastructure]
+      to: [lambda, container, gateway, cdn, datastore, queue, auth, boundary]
+  contains:
+    - from: [boundary]
+      to: [component, lambda, container, gateway, datastore, queue, auth, infrastructure]
+    - from: [ui]
+      to: [ui]
+    - from: [container]
+      to: [component, container]
+  emits:
+    - from: [component, lambda, container]
+      to: [queue]
+
+fields:
+  # ══════════════════════════════════
+  # AWS INFRASTRUCTURE FIELDS
+  # Only for AWS-backed resources
+  # ══════════════════════════════════
+  x.aws.arn:
+    type: string
+    label: "ARN"
+    description: "Amazon Resource Name for this AWS resource."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda, container, gateway, cdn, datastore, queue, auth] }
+    ui: { widget: "text", section: "AWS", order: 10 }
+
+  x.aws.region:
+    type: string
+    label: "Region"
+    enum: [us-east-1, us-east-2, us-west-1, us-west-2, eu-west-1, eu-central-1, ap-southeast-1]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda, container, gateway, cdn, datastore, queue, auth] }
+    ui: { widget: "select", section: "AWS", order: 20 }
+
+  x.aws.accountId:
+    type: string
+    label: "Account ID"
+    description: "12-digit AWS account ID."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda, container, gateway, cdn, datastore, queue, auth] }
+    ui: { widget: "text", section: "AWS", order: 30 }
+
+  # ══════════════════════════════════
+  # UI SCREEN FIELDS
+  # ══════════════════════════════════
+  x.ui.route:
+    type: string
+    label: "Route / Path"
+    description: "React Router path pattern (e.g. /dashboard, /forms/:id/edit)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [ui] }
+    ui: { widget: "text", section: "Screen", order: 10 }
+
+  x.ui.pageType:
+    type: string
+    label: "Page Type"
+    description: "High-level layout pattern for this screen."
+    enum: [list, detail, form, dashboard, modal, wizard, settings, auth, editor]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [ui] }
+    ui: { widget: "select", section: "Screen", order: 20 }
+
+  x.ui.framework:
+    type: string
+    label: "Frontend Framework"
+    description: "Component library or CSS framework (e.g. React + Tailwind, Next.js + Shadcn/ui)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [ui] }
+    ui: { widget: "text", section: "Screen", order: 30 }
+
+  x.ui.stateManagement:
+    type: string
+    label: "State Management"
+    description: "Libraries for state (e.g. Zustand, React Query, Redux)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [ui] }
+    ui: { widget: "text", section: "Screen", order: 40 }
+
+  # ══════════════════════════════════
+  # COMPONENT / SERVICE FIELDS
+  # ══════════════════════════════════
+  x.service.language:
+    type: string
+    label: "Language"
+    description: "Primary programming language."
+    enum: [TypeScript, JavaScript, Python, Go, Rust, Java]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [component, container] }
+    ui: { widget: "select", section: "Service", order: 10 }
+
+  x.service.framework:
+    type: string
+    label: "Framework"
+    description: "Web framework or runtime (e.g. Express.js, Fastify, Flask, Gin)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [component, container] }
+    ui: { widget: "text", section: "Service", order: 20 }
+
+  x.service.port:
+    type: number
+    label: "Port"
+    description: "Default listening port for the HTTP server."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [component] }
+    ui: { widget: "number", section: "Service", order: 30 }
+
+  x.service.healthCheck:
+    type: string
+    label: "Health Check Path"
+    description: "HTTP GET endpoint for health checks (e.g. /health)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [component] }
+    ui: { widget: "text", section: "Service", order: 40 }
+
+  # ══════════════════════════════════
+  # API ENDPOINT FIELDS
+  # ══════════════════════════════════
+  x.api.method:
+    type: string
+    label: "HTTP Method"
+    enum: [GET, POST, PUT, PATCH, DELETE]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [interface] }
+    ui: { widget: "select", section: "Endpoint", order: 10 }
+
+  x.api.path:
+    type: string
+    label: "HTTP Path"
+    description: "URL path with parameter placeholders (e.g. /api/users/:id)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [interface] }
+    ui: { widget: "text", section: "Endpoint", order: 20 }
+
+  x.api.auth:
+    type: string
+    label: "Auth Required"
+    description: "Authentication required for this endpoint."
+    enum: [none, jwt, api-key, session, sigv4]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [interface] }
+    ui: { widget: "select", section: "Endpoint", order: 30 }
+
+  x.api.requestBody:
+    type: string
+    label: "Request Body Schema"
+    description: "JSON schema or TypeScript interface for the request body."
+    format: json
+    appliesTo: { nodes: true, edges: false, nodeKinds: [interface] }
+    ui: { widget: "code", section: "Endpoint", order: 40 }
+
+  x.api.responseBody:
+    type: string
+    label: "Response Body Schema"
+    description: "JSON schema or TypeScript interface for the success response."
+    format: json
+    appliesTo: { nodes: true, edges: false, nodeKinds: [interface] }
+    ui: { widget: "code", section: "Endpoint", order: 50 }
+
+  x.api.rateLimit:
+    type: string
+    label: "Rate Limit"
+    description: "Rate limiting for this endpoint (e.g. 100/min per tenant)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [interface] }
+    ui: { widget: "text", section: "Endpoint", order: 60 }
+
+  # ══════════════════════════════════
+  # LAMBDA FIELDS
+  # ══════════════════════════════════
+  x.lambda.runtime:
+    type: string
+    label: "Runtime"
+    description: "Lambda runtime environment."
+    enum: [nodejs20.x, nodejs18.x, python3.12, python3.11, go1.x, java21, dotnet8, rust]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda] }
+    ui: { widget: "select", section: "Lambda", order: 10 }
+
+  x.lambda.handler:
+    type: string
+    label: "Handler"
+    description: "Entry point function (e.g. index.handler, main.lambda_handler)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda] }
+    ui: { widget: "text", section: "Lambda", order: 20 }
+
+  x.lambda.memory:
+    type: number
+    label: "Memory (MB)"
+    description: "Allocated memory in MB (128-10240). CPU scales proportionally."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda] }
+    ui: { widget: "number", section: "Lambda", order: 30 }
+
+  x.lambda.timeout:
+    type: number
+    label: "Timeout (seconds)"
+    description: "Maximum execution time in seconds (1-900)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda] }
+    ui: { widget: "number", section: "Lambda", order: 40 }
+
+  x.lambda.layers:
+    type: string
+    label: "Lambda Layers"
+    description: "Attached Lambda layers (shared libraries, extensions)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda] }
+    ui: { widget: "textarea", section: "Lambda", order: 50 }
+
+  x.lambda.envVars:
+    type: string
+    label: "Environment Variables"
+    description: "Required env vars with descriptions and example values."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda] }
+    ui: { widget: "code", section: "Lambda", order: 60 }
+
+  # ══════════════════════════════════
+  # CONTAINER FIELDS
+  # ══════════════════════════════════
+  x.container.image:
+    type: string
+    label: "Docker Image"
+    description: "Full image name with tag (e.g. 123456789.dkr.ecr.us-east-1.amazonaws.com/api:latest)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [container] }
+    ui: { widget: "text", section: "Container", order: 10 }
+
+  x.container.port:
+    type: number
+    label: "Exposed Port"
+    description: "Container port the application listens on."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [container] }
+    ui: { widget: "number", section: "Container", order: 20 }
+
+  x.container.cpu:
+    type: string
+    label: "CPU Units"
+    description: "Fargate CPU units (256 = 0.25 vCPU, 1024 = 1 vCPU, 4096 = 4 vCPU)."
+    enum: ["256", "512", "1024", "2048", "4096"]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [container] }
+    ui: { widget: "select", section: "Container", order: 30 }
+
+  x.container.memory:
+    type: string
+    label: "Memory"
+    description: "Fargate memory allocation (e.g. 512MB, 1GB, 2GB)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [container] }
+    ui: { widget: "text", section: "Container", order: 40 }
+
+  x.container.desiredCount:
+    type: number
+    label: "Desired Count"
+    description: "Number of running task instances."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [container] }
+    ui: { widget: "number", section: "Container", order: 50 }
+
+  x.container.healthCheck:
+    type: string
+    label: "Health Check"
+    description: "Health check path and config for ECS (e.g. /health, interval 30s)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [container] }
+    ui: { widget: "text", section: "Container", order: 60 }
+
+  # ══════════════════════════════════
+  # GATEWAY FIELDS
+  # ══════════════════════════════════
+  x.gateway.type:
+    type: string
+    label: "Gateway Type"
+    description: "API Gateway type."
+    enum: [HTTP, REST, WebSocket, ALB]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [gateway] }
+    ui: { widget: "select", section: "Gateway", order: 10 }
+
+  x.gateway.stage:
+    type: string
+    label: "Stage"
+    description: "Deployment stage (e.g. prod, staging, dev)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [gateway] }
+    ui: { widget: "text", section: "Gateway", order: 20 }
+
+  x.gateway.throttle:
+    type: string
+    label: "Throttling"
+    description: "Default rate and burst limits (e.g. 1000 rps, burst 2000)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [gateway] }
+    ui: { widget: "text", section: "Gateway", order: 30 }
+
+  x.gateway.cors:
+    type: string
+    label: "CORS Config"
+    description: "Allowed origins, methods, and headers."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [gateway] }
+    ui: { widget: "textarea", section: "Gateway", order: 40 }
+
+  # ══════════════════════════════════
+  # CDN FIELDS
+  # ══════════════════════════════════
+  x.cdn.origin:
+    type: string
+    label: "Origin"
+    description: "Origin domain or S3 bucket name."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [cdn] }
+    ui: { widget: "text", section: "CDN", order: 10 }
+
+  x.cdn.priceClass:
+    type: string
+    label: "Price Class"
+    description: "CloudFront price class (edge location coverage)."
+    enum: [PriceClass_100, PriceClass_200, PriceClass_All]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [cdn] }
+    ui: { widget: "select", section: "CDN", order: 20 }
+
+  x.cdn.cacheTtl:
+    type: string
+    label: "Default Cache TTL"
+    description: "Default TTL for cached objects (e.g. 86400 for 24 hours)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [cdn] }
+    ui: { widget: "text", section: "CDN", order: 30 }
+
+  x.cdn.customDomain:
+    type: string
+    label: "Custom Domain"
+    description: "Custom domain name (e.g. app.example.com)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [cdn] }
+    ui: { widget: "text", section: "CDN", order: 40 }
+
+  # ══════════════════════════════════
+  # AUTH FIELDS
+  # ══════════════════════════════════
+  x.auth.provider:
+    type: string
+    label: "Auth Provider"
+    description: "Identity provider type."
+    enum: [Cognito, Auth0, Okta, Firebase Auth, Custom]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [auth] }
+    ui: { widget: "select", section: "Auth", order: 10 }
+
+  x.auth.flows:
+    type: string
+    label: "Auth Flows"
+    description: "Supported authentication flows (e.g. USER_SRP_AUTH, ALLOW_REFRESH_TOKEN_AUTH, OAuth2 PKCE)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [auth] }
+    ui: { widget: "textarea", section: "Auth", order: 20 }
+
+  x.auth.mfa:
+    type: string
+    label: "MFA"
+    description: "Multi-factor authentication configuration."
+    enum: [OFF, OPTIONAL, REQUIRED]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [auth] }
+    ui: { widget: "select", section: "Auth", order: 30 }
+
+  x.auth.tokenExpiry:
+    type: string
+    label: "Token Expiry"
+    description: "Access token and refresh token lifetimes (e.g. access=1h, refresh=30d)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [auth] }
+    ui: { widget: "text", section: "Auth", order: 40 }
+
+  # ══════════════════════════════════
+  # DATASTORE FIELDS
+  # ══════════════════════════════════
+  x.db.engine:
+    type: string
+    label: "Engine"
+    description: "Database engine."
+    enum: [PostgreSQL, MySQL, DynamoDB, Redis, S3, ElastiCache, DocumentDB, Aurora]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [datastore] }
+    ui: { widget: "select", section: "Database", order: 10 }
+
+  x.db.version:
+    type: string
+    label: "Engine Version"
+    description: "Specific engine version (e.g. PostgreSQL 15.4, Redis 7.2)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [datastore] }
+    ui: { widget: "text", section: "Database", order: 20 }
+
+  x.db.instanceClass:
+    type: string
+    label: "Instance Class"
+    description: "RDS/ElastiCache instance type (e.g. db.t3.medium, cache.t3.micro)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [datastore] }
+    ui: { widget: "text", section: "Database", order: 30 }
+
+  x.db.tables:
+    type: string
+    label: "Key Tables / Collections"
+    description: "Primary tables or collections with their purpose and access patterns."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [datastore] }
+    ui: { widget: "textarea", section: "Database", order: 40 }
+
+  x.db.multiAz:
+    type: boolean
+    label: "Multi-AZ"
+    description: "Whether deployed across multiple availability zones for high availability."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [datastore] }
+    ui: { widget: "checkbox", section: "Database", order: 50 }
+    default: false
+
+  x.db.backupRetention:
+    type: number
+    label: "Backup Retention (days)"
+    description: "Number of days automated backups are retained."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [datastore] }
+    ui: { widget: "number", section: "Database", order: 60 }
+
+  # ══════════════════════════════════
+  # QUEUE FIELDS
+  # ══════════════════════════════════
+  x.queue.type:
+    type: string
+    label: "Queue Type"
+    description: "SQS queue type. Standard = at-least-once, best-effort order. FIFO = exactly-once, strict order."
+    enum: [standard, fifo]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [queue] }
+    ui: { widget: "select", section: "Queue", order: 10 }
+
+  x.queue.dlq:
+    type: string
+    label: "Dead Letter Queue"
+    description: "DLQ name or ARN for failed messages."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [queue] }
+    ui: { widget: "text", section: "Queue", order: 20 }
+
+  x.queue.maxRetries:
+    type: number
+    label: "Max Receive Count"
+    description: "Max delivery attempts before moving message to DLQ."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [queue] }
+    ui: { widget: "number", section: "Queue", order: 30 }
+
+  x.queue.visibilityTimeout:
+    type: string
+    label: "Visibility Timeout"
+    description: "How long a message is hidden after being received (e.g. 60s)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [queue] }
+    ui: { widget: "text", section: "Queue", order: 40 }
+
+  x.queue.messageSchema:
+    type: string
+    label: "Message Schema"
+    description: "JSON schema or TypeScript interface for message payloads."
+    format: code
+    appliesTo: { nodes: true, edges: false, nodeKinds: [queue] }
+    ui: { widget: "code", section: "Queue", order: 50 }
+
+  # ══════════════════════════════════
+  # SECURITY FIELDS
+  # Scoped to nodes/edges that handle data
+  # ══════════════════════════════════
+  x.security.dataClassification:
+    type: string
+    label: "Data Classification"
+    enum: [none, internal, pii, pci, phi]
+    appliesTo: { nodes: true, edges: true, nodeKinds: [component, lambda, container, datastore, queue, interface], edgeKinds: [calls, routes, reads, writes, publishes, serves, authenticates] }
+    ui: { widget: "select", section: "Security", order: 10 }
+
+  x.security.encryptionAtRest:
+    type: boolean
+    label: "Encryption at Rest"
+    appliesTo: { nodes: true, edges: false, nodeKinds: [datastore, queue] }
+    ui: { widget: "checkbox", section: "Security", order: 20 }
+    default: true
+
+  x.security.encryptionInTransit:
+    type: boolean
+    label: "Encryption in Transit"
+    appliesTo: { edges: true, nodes: false, edgeKinds: [calls, routes, reads, writes, serves, authenticates] }
+    ui: { widget: "checkbox", section: "Security", order: 30 }
+    default: true
+
+  # ══════════════════════════════════
+  # EDGE FIELDS — transport connections only
+  # ══════════════════════════════════
+  x.protocol:
+    type: string
+    label: "Protocol"
+    enum: [https, http, grpc, sql, kv, event, websocket]
+    appliesTo: { edges: true, nodes: false, edgeKinds: [calls, triggers, routes, reads, writes, serves, authenticates, authorizes, subscribes] }
+    ui: { widget: "select", section: "Connection", order: 10 }
+
+  x.auth.mechanism:
+    type: string
+    label: "Auth Mechanism"
+    enum: [none, cookie, jwt, oauth2, sigv4, mtls, api-key]
+    appliesTo: { edges: true, nodes: false, edgeKinds: [calls, triggers, routes, reads, writes, serves, authenticates, authorizes] }
+    ui: { widget: "select", section: "Connection", order: 20 }
+
+  # ══════════════════════════════════
+  # OPS FIELDS — operational resources only
+  # ══════════════════════════════════
+  x.ops.runbook:
+    type: string
+    label: "Runbook URL"
+    format: uri
+    appliesTo: { nodes: true, edges: false, nodeKinds: [component, lambda, container, datastore, queue, gateway] }
+    ui: { widget: "text", section: "Ops", order: 10 }
+
+  x.ops.dashboard:
+    type: string
+    label: "Dashboard URL"
+    format: uri
+    appliesTo: { nodes: true, edges: false, nodeKinds: [component, lambda, container, datastore, queue, gateway] }
+    ui: { widget: "text", section: "Ops", order: 20 }
+
+  x.ops.alarmArn:
+    type: string
+    label: "CloudWatch Alarm ARN"
+    description: "ARN of the primary CloudWatch alarm for this resource."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda, container, datastore, queue, gateway] }
+    ui: { widget: "text", section: "Ops", order: 30 }
+
+  # ══════════════════════════════════
+  # FINOPS FIELDS — AWS resources that cost money
+  # ══════════════════════════════════
+  x.finops.costCenter:
+    type: string
+    label: "Cost Center"
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda, container, datastore, queue, cdn, gateway] }
+    ui: { widget: "text", section: "FinOps", order: 10 }
+
+  # ══════════════════════════════════
+  # DEPLOYMENT FIELDS
+  # Environment strategy for local, QA, and production
+  # ══════════════════════════════════
+  x.deploy.environments:
+    type: string
+    label: "Environments"
+    description: "Comma-separated environments this resource is deployed to (e.g. local, qa, staging, prod)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [lambda, container, gateway, cdn, datastore, queue, auth, infrastructure] }
+    ui: { widget: "text", section: "Deployment", order: 10 }
+
+  x.deploy.strategy:
+    type: string
+    label: "Deploy Strategy"
+    description: "How this resource is deployed to production."
+    enum: [blue-green, rolling, canary, recreate, immutable]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [container, lambda] }
+    ui: { widget: "select", section: "Deployment", order: 20 }
+
+  x.deploy.local:
+    type: string
+    label: "Local Dev"
+    description: "How this resource runs in local development (e.g. docker-compose, localstack, mock, sqlite, in-memory)."
+    enum: [docker-compose, localstack, mock, sqlite, in-memory, none]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [container, lambda, datastore, queue, auth, gateway] }
+    ui: { widget: "select", section: "Deployment", order: 30 }
+
+  x.deploy.qa:
+    type: string
+    label: "QA Config"
+    description: "QA/staging environment notes — differences from production (e.g. shared cluster, reduced replicas, smaller instance)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [container, lambda, datastore, queue, auth, gateway, cdn] }
+    ui: { widget: "textarea", section: "Deployment", order: 40 }
+
+  x.deploy.prod:
+    type: string
+    label: "Production Config"
+    description: "Production deployment notes — scaling, multi-AZ, DR, performance targets."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [container, lambda, datastore, queue, auth, gateway, cdn] }
+    ui: { widget: "textarea", section: "Deployment", order: 50 }
+
+  # ══════════════════════════════════
+  # INFRASTRUCTURE FIELDS
+  # For IaC project nodes
+  # ══════════════════════════════════
+  x.infra.tool:
+    type: string
+    label: "IaC Tool"
+    description: "Infrastructure-as-code tool used to provision resources."
+    enum: [Terraform, CDK, CloudFormation, Pulumi, SST]
+    appliesTo: { nodes: true, edges: false, nodeKinds: [infrastructure] }
+    ui: { widget: "select", section: "Infrastructure", order: 10 }
+
+  x.infra.stateBackend:
+    type: string
+    label: "State Backend"
+    description: "Where IaC state is stored (e.g. S3 + DynamoDB, Terraform Cloud, local)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [infrastructure] }
+    ui: { widget: "text", section: "Infrastructure", order: 20 }
+
+  x.infra.cicd:
+    type: string
+    label: "CI/CD Pipeline"
+    description: "Where deploy scripts run (e.g. GitHub Actions, CodePipeline, GitLab CI)."
+    appliesTo: { nodes: true, edges: false, nodeKinds: [infrastructure] }
+    ui: { widget: "text", section: "Infrastructure", order: 30 }
+
+  # ══════════════════════════════════
+  # DOCUMENTATION — universal
+  # ══════════════════════════════════
+  x.docs.description:
+    type: string
+    label: "Description"
+    description: "Detailed description of this component's purpose and behavior."
+    appliesTo: { nodes: true, edges: true }
+    ui: { widget: "textarea", section: "Documentation", order: 10 }
+
+  x.docs.notes:
+    type: string
+    label: "Notes"
+    format: markdown
+    appliesTo: { nodes: true, edges: false }
+    ui: { widget: "markdown", section: "Documentation", order: 20 }
+
+validation:
+  requiredByNodeKind:
+    datastore: [x.security.dataClassification, x.db.engine]
+    lambda: [x.lambda.runtime]
+    interface: [x.api.method, x.api.path]
+    queue: [x.queue.type]
+  requiredByEdgeKind:
+    routes: [x.protocol]
+    calls: [x.protocol]
+
+forms:
+  nodesByKind:
+    actor:
+      title: "Actor"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, tags]
+        - title: "Documentation"
+          fields: [x.docs.description, x.docs.notes]
+    ui:
+      title: "UI Screen"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, tags]
+        - title: "Screen"
+          fields: [x.ui.route, x.ui.pageType, x.ui.framework, x.ui.stateManagement]
+        - title: "Documentation"
+          fields: [x.docs.description, x.docs.notes]
+    component:
+      title: "Service"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, type, tags]
+        - title: "Service"
+          fields: [x.service.language, x.service.framework, x.service.port, x.service.healthCheck]
+        - title: "Security"
+          fields: [x.security.dataClassification]
+        - title: "Ops"
+          fields: [x.ops.runbook, x.ops.dashboard]
+        - title: "Documentation"
+          fields: [x.docs.description, x.docs.notes]
+    interface:
+      title: "API Endpoint"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, type]
+        - title: "Endpoint"
+          fields: [x.api.method, x.api.path, x.api.auth, x.api.rateLimit]
+        - title: "Request / Response"
+          fields: [x.api.requestBody, x.api.responseBody]
+        - title: "Security"
+          fields: [x.security.dataClassification]
+        - title: "Documentation"
+          fields: [x.docs.description]
+    lambda:
+      title: "Lambda Function"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, tags]
+        - title: "Lambda"
+          fields: [x.lambda.runtime, x.lambda.handler, x.lambda.memory, x.lambda.timeout, x.lambda.envVars, x.lambda.layers]
+        - title: "AWS"
+          fields: [x.aws.arn, x.aws.region, x.aws.accountId]
+        - title: "Deployment"
+          fields: [x.deploy.environments, x.deploy.strategy, x.deploy.local, x.deploy.qa, x.deploy.prod]
+        - title: "Security"
+          fields: [x.security.dataClassification]
+        - title: "Ops"
+          fields: [x.ops.runbook, x.ops.dashboard, x.ops.alarmArn]
+        - title: "FinOps"
+          fields: [x.finops.costCenter]
+        - title: "Documentation"
+          fields: [x.docs.description]
+    container:
+      title: "Container"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, type, tags]
+        - title: "Service"
+          fields: [x.service.language, x.service.framework]
+        - title: "Container"
+          fields: [x.container.image, x.container.port, x.container.cpu, x.container.memory, x.container.desiredCount, x.container.healthCheck]
+        - title: "AWS"
+          fields: [x.aws.arn, x.aws.region, x.aws.accountId]
+        - title: "Deployment"
+          fields: [x.deploy.environments, x.deploy.strategy, x.deploy.local, x.deploy.qa, x.deploy.prod]
+        - title: "Security"
+          fields: [x.security.dataClassification]
+        - title: "Ops"
+          fields: [x.ops.runbook, x.ops.dashboard, x.ops.alarmArn]
+        - title: "FinOps"
+          fields: [x.finops.costCenter]
+        - title: "Documentation"
+          fields: [x.docs.description]
+    gateway:
+      title: "API Gateway"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, tags]
+        - title: "Gateway"
+          fields: [x.gateway.type, x.gateway.stage, x.gateway.throttle, x.gateway.cors]
+        - title: "AWS"
+          fields: [x.aws.arn, x.aws.region, x.aws.accountId]
+        - title: "Deployment"
+          fields: [x.deploy.environments, x.deploy.local, x.deploy.qa, x.deploy.prod]
+        - title: "Ops"
+          fields: [x.ops.runbook, x.ops.dashboard, x.ops.alarmArn]
+        - title: "FinOps"
+          fields: [x.finops.costCenter]
+        - title: "Documentation"
+          fields: [x.docs.description]
+    cdn:
+      title: "CDN"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, tags]
+        - title: "CDN"
+          fields: [x.cdn.origin, x.cdn.priceClass, x.cdn.cacheTtl, x.cdn.customDomain]
+        - title: "AWS"
+          fields: [x.aws.arn, x.aws.region, x.aws.accountId]
+        - title: "FinOps"
+          fields: [x.finops.costCenter]
+        - title: "Documentation"
+          fields: [x.docs.description]
+    auth:
+      title: "Auth Provider"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, tags]
+        - title: "Auth"
+          fields: [x.auth.provider, x.auth.flows, x.auth.mfa, x.auth.tokenExpiry]
+        - title: "AWS"
+          fields: [x.aws.arn, x.aws.region, x.aws.accountId]
+        - title: "Documentation"
+          fields: [x.docs.description]
+    datastore:
+      title: "Datastore"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, type, tags]
+        - title: "Database"
+          fields: [x.db.engine, x.db.version, x.db.instanceClass, x.db.tables, x.db.multiAz, x.db.backupRetention]
+        - title: "AWS"
+          fields: [x.aws.arn, x.aws.region, x.aws.accountId]
+        - title: "Deployment"
+          fields: [x.deploy.environments, x.deploy.local, x.deploy.qa, x.deploy.prod]
+        - title: "Security"
+          fields: [x.security.dataClassification, x.security.encryptionAtRest]
+        - title: "Ops"
+          fields: [x.ops.runbook, x.ops.dashboard, x.ops.alarmArn]
+        - title: "FinOps"
+          fields: [x.finops.costCenter]
+        - title: "Documentation"
+          fields: [x.docs.description, x.docs.notes]
+    queue:
+      title: "Message Queue"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, type, tags]
+        - title: "Queue"
+          fields: [x.queue.type, x.queue.dlq, x.queue.maxRetries, x.queue.visibilityTimeout, x.queue.messageSchema]
+        - title: "AWS"
+          fields: [x.aws.arn, x.aws.region, x.aws.accountId]
+        - title: "Deployment"
+          fields: [x.deploy.environments, x.deploy.local, x.deploy.qa, x.deploy.prod]
+        - title: "Security"
+          fields: [x.security.dataClassification, x.security.encryptionAtRest]
+        - title: "Ops"
+          fields: [x.ops.runbook, x.ops.dashboard, x.ops.alarmArn]
+        - title: "FinOps"
+          fields: [x.finops.costCenter]
+        - title: "Documentation"
+          fields: [x.docs.description]
+    infrastructure:
+      title: "Infrastructure"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, tags]
+        - title: "Infrastructure"
+          fields: [x.infra.tool, x.infra.stateBackend, x.infra.cicd]
+        - title: "Deployment"
+          fields: [x.deploy.environments]
+        - title: "Documentation"
+          fields: [x.docs.description, x.docs.notes]
+    boundary:
+      title: "Boundary"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, type, tags]
+        - title: "Documentation"
+          fields: [x.docs.description]
+    artifact:
+      title: "Artifact"
+      sections:
+        - title: "Identity"
+          fields: [id, name, kind, layer, type, tags]
+        - title: "Documentation"
+          fields: [x.docs.description, x.docs.notes]
+  edgesByKind:
+    calls:
+      title: "Call"
+      sections:
+        - title: "Core"
+          fields: [kind, from, to, layer, type, tags]
+        - title: "Connection"
+          fields: [x.protocol, x.auth.mechanism]
+        - title: "Security"
+          fields: [x.security.encryptionInTransit, x.security.dataClassification]
+        - title: "Documentation"
+          fields: [x.docs.description]
+    routes:
+      title: "Route"
+      sections:
+        - title: "Core"
+          fields: [kind, from, to, layer, type, tags]
+        - title: "Connection"
+          fields: [x.protocol, x.auth.mechanism]
+        - title: "Security"
+          fields: [x.security.encryptionInTransit, x.security.dataClassification]
+    reads:
+      title: "Read"
+      sections:
+        - title: "Core"
+          fields: [kind, from, to, layer, type]
+        - title: "Connection"
+          fields: [x.protocol, x.auth.mechanism]
+        - title: "Security"
+          fields: [x.security.encryptionInTransit, x.security.dataClassification]
+    writes:
+      title: "Write"
+      sections:
+        - title: "Core"
+          fields: [kind, from, to, layer, type]
+        - title: "Connection"
+          fields: [x.protocol, x.auth.mechanism]
+        - title: "Security"
+          fields: [x.security.encryptionInTransit, x.security.dataClassification]
+    publishes:
+      title: "Publish"
+      sections:
+        - title: "Core"
+          fields: [kind, from, to, layer, type]
+        - title: "Connection"
+          fields: [x.protocol]
+        - title: "Security"
+          fields: [x.security.dataClassification]
+    serves:
+      title: "Serve"
+      sections:
+        - title: "Core"
+          fields: [kind, from, to, layer, type]
+        - title: "Connection"
+          fields: [x.protocol]
+        - title: "Security"
+          fields: [x.security.encryptionInTransit]
+    authenticates:
+      title: "Authenticates"
+      sections:
+        - title: "Core"
+          fields: [kind, from, to, layer, type]
+        - title: "Connection"
+          fields: [x.protocol, x.auth.mechanism]
+        - title: "Security"
+          fields: [x.security.encryptionInTransit]
+    provisions:
+      title: "Provisions"
+      sections:
+        - title: "Core"
+          fields: [kind, from, to, layer, type]
+        - title: "Documentation"
+          fields: [x.docs.description]
+
+aiPrompt: |
+  You are designing AWS-hosted web applications as a monorepo. Each implementable node becomes a subfolder in the monorepo that an AI coding assistant will implement. Your architecture directly drives code generation AND infrastructure provisioning.
+
+  MONOREPO & IMPLEMENTABLE NODES
+  - Implementable kinds: ui (SPA apps), container (API servers), lambda (serverless functions), infrastructure (Terraform/IaC)
+  - Each implementable node becomes a subfolder: implementations/{node.id}/
+  - The Build system generates a CLAUDE.md for each subfolder describing what to build, derived from the node's neighbors, edges, and field values
+  - Design the graph so each implementable node has rich context: child nodes, edges to APIs/datastores/queues, and thorough field values
+  - The more detail you put on nodes and edges, the better the generated code will be
+
+  INFRASTRUCTURE NODE (implementable)
+  - Every architecture MUST include exactly one infrastructure node (kind: infrastructure, id: infra.{appname})
+  - The infrastructure node is implementable — its subfolder will contain Terraform files, deployment scripts, and environment configs
+  - Connect the infrastructure node to EVERY AWS resource it must provision using "provisions" edges
+  - This includes: datastores, queues, gateways, CDNs, auth providers, lambdas, containers, and boundaries (VPCs/subnets)
+  - Set x.infra.tool (Terraform, CDK, CloudFormation, Pulumi, SST) to define the IaC toolchain
+  - Set x.infra.stateBackend (e.g. "S3 + DynamoDB") and x.infra.cicd (e.g. "GitHub Actions")
+  - The generated CLAUDE.md will list every provisioned resource with its configuration, enabling the AI to write complete Terraform modules
+
+  DEPLOYMENT ENVIRONMENTS
+  - Every AWS-backed resource should set x.deploy.environments (e.g. "local, qa, prod")
+  - Set x.deploy.local on resources to specify local development strategy:
+    - Datastores: docker-compose (Postgres/Redis), sqlite, in-memory, localstack (DynamoDB/S3)
+    - Queues: localstack, in-memory, mock
+    - Auth: mock, in-memory
+    - Gateway: none (call containers directly)
+    - Containers: docker-compose
+    - Lambdas: docker-compose, mock
+  - Set x.deploy.strategy on containers and lambdas (blue-green, rolling, canary, recreate)
+  - Set x.deploy.qa for staging/QA differences (e.g. "single-AZ, db.t3.small, 1 replica")
+  - Set x.deploy.prod for production config (e.g. "multi-AZ, db.r6g.large, 3 replicas, auto-scaling")
+
+  UI HIERARCHY (recursive, implementable)
+  - The top-level UI node represents the SPA application itself — mark it as the parent
+  - Add child UI nodes for each major page/route (e.g., ui.dashboard, ui.settings, ui.users)
+  - Add grandchild UI nodes for sub-pages or complex page sections (e.g., ui.users.list, ui.users.detail, ui.users.edit)
+  - Use "contains" edges from parent → child to express the hierarchy
+  - The parent UI node is implementable — when built, its CLAUDE.md will describe all child screens the SPA must implement
+  - Populate x.ui.route on each screen (e.g., /dashboard, /users/:id/edit)
+  - Populate x.ui.pageType to hint at layout (list, detail, form, dashboard, modal, wizard)
+  - Set x.ui.framework and x.ui.stateManagement on the parent to define the tech stack
+  - Connect UI screens to API interfaces with "triggers" edges to define what data each screen needs
+
+  CONTAINER HIERARCHY (recursive, implementable)
+  - The top-level container node represents the deployable application (e.g., an Express.js API server)
+  - Add child component nodes for internal services/modules (e.g., auth service, user service, billing service)
+  - Use "contains" edges from container → component to express the hierarchy
+  - The parent container is implementable — its CLAUDE.md will describe all internal services
+  - Set x.service.language and x.service.framework on the container for the tech stack
+  - Set x.container.port, x.container.cpu, x.container.memory for runtime config
+  - Set x.deploy.local, x.deploy.strategy, x.deploy.qa, x.deploy.prod for environment config
+  - Connect child components to their API interfaces with "implements" edges
+  - Connect child components to datastores with "reads"/"writes" edges
+
+  LAMBDA FUNCTIONS (implementable)
+  - Lambdas are for infrastructure glue: event handlers, scheduled tasks, stream processors, authorizers
+  - Each lambda is implementable — its subfolder will contain the handler code
+  - Set x.lambda.runtime, x.lambda.handler, x.lambda.memory, x.lambda.timeout
+  - Set x.deploy.local (docker-compose or mock) and x.deploy.strategy
+  - Connect lambdas to their triggers (queues, gateways, schedules) and to datastores they access
+  - The infrastructure node provisions the lambda via a "provisions" edge
+
+  NAMING CONVENTIONS
+  - UI nodes: ui.{app} for the parent, ui.{app}.{page} or ui.{page} for children
+  - Container nodes: svc.{name} for the parent, child components use the component kind
+  - Lambda nodes: lambda.{purpose} (e.g., lambda.email_sender, lambda.image_processor)
+  - Infrastructure: infra.{appname} (one per app)
+  - API interfaces: api.{service}.{operation} (e.g., api.users.list, api.auth.login)
+  - Datastores: db.{name}, cache.{name}, store.{name}
+  - Queues: queue.{name}
+  - AWS resources: aws.{service}.{name}
+
+  ARCHITECTURE STYLE
+  - Model the full request path: Actor → UI (SPA) → CDN/Gateway → Container (API) → Data
+  - Application logic lives in containers — lambdas are for glue only
+  - Every public endpoint passes through a CDN or API gateway
+  - One infrastructure node provisions ALL AWS resources
+  - Separate concerns across layers: product (actors/UIs), logical (components/services), api (interfaces), runtime (containers/gateways/lambdas), data (datastores), messaging (queues), security (auth), monitoring (observability)
+
+  SECURITY
+  - All data-carrying edges must set x.security.dataClassification (none, internal, pii, pci, phi)
+  - Datastores holding PII must have x.security.encryptionAtRest: true
+  - Cross-boundary edges must set x.security.encryptionInTransit: true
+  - Auth edges should specify x.auth.mechanism (jwt, oauth2, sigv4, mtls, cookie)
+
+  EDGE CONVENTIONS
+  - Set x.protocol on transport edges (https, http, grpc, sql, kv, event, websocket)
+  - "triggers": UI screen → API interface (user action initiates a request)
+  - "routes": CDN/gateway → container/gateway (infrastructure routing)
+  - "calls": container/component → container/component (service-to-service)
+  - "reads"/"writes": component → datastore (data access)
+  - "publishes"/"subscribes"/"emits": component → queue (async messaging)
+  - "implements": component → interface (this service handles this endpoint)
+  - "provisions": infrastructure → AWS resource (IaC manages this resource)
+  - "contains": parent → child (hierarchy — UI screens, container services, boundary membership)
+  - "authenticates"/"authorizes": component/UI → auth provider
+
+  END-TO-END THINKING
+  - When adding a feature, trace it from actor through UI screen → API → container service → datastore
+  - Every API interface should have a "triggers" edge from a UI screen and an "implements" edge from a component
+  - Every datastore should have "reads"/"writes" edges AND a "provisions" edge from the infrastructure node
+  - Every AWS resource (datastore, queue, gateway, cdn, auth, lambda, container) should have a "provisions" edge from the infrastructure node
+  - Populate deployment fields on every AWS resource — local dev strategy is critical for developer experience
+  - Populate field values thoroughly — they become implementation requirements in the generated CLAUDE.md

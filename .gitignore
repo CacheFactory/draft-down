@@ -1,0 +1,11 @@
+node_modules/
+dist/
+test-results/
+# OBJ 3D model files (not the file.obj/ implementation directory)
+*.obj
+!implementations/file.obj/
+*.sketch
+.DS_Store
+settings.yaml
+release/
+.env.signing
