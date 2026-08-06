@@ -902,7 +902,7 @@ export abstract class BaseTool implements ITool {
   protected isHardSnap(event: ToolMouseEvent): boolean {
     const k = event.snapKind;
     return k === 'origin' || k === 'vertex' || k === 'midpoint' ||
-           k === 'intersection' || k === 'edge';
+           k === 'intersection' || k === 'center' || k === 'edge';
   }
 
   /**

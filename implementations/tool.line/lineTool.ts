@@ -255,9 +255,16 @@ export class LineTool extends BaseTool {
     }
 
     // Locked face plane (set when the first click landed on a face).
-    // Prefer the snapped worldPoint when it lies ON that plane (e.g. snapping
-    // to a vertex on the face) — otherwise raycast cursor onto the locked plane.
+    // A hard point snap (endpoint/midpoint/intersection/center/on-edge)
+    // ALWAYS wins with its exact 3D position, even off the plane — the
+    // snap indicator showed that point, so the committed geometry must land
+    // there (indicator == geometry). Projecting it onto the plane instead
+    // yields a point on the same screen ray at the wrong depth: connected
+    // in the current view, floating in space from any other angle.
     if (this.lockedFacePlane) {
+      if (this.isHardSnap(event) && event.worldPoint) {
+        return event.worldPoint;
+      }
       if (event.worldPoint && this.pointOnPlane(event.worldPoint, this.lockedFacePlane, 0.01)) {
         return event.worldPoint;
       }
