@@ -1809,6 +1809,21 @@ export class SceneBridge {
    * Returns the snapped world point, or the original worldPoint if no snap.
    * Also positions the snap marker in the 3D scene.
    */
+  /** World units per screen pixel at the given view depth. Orthographic
+   *  scale depends only on the frustum size (zoom) — NOT camera distance;
+   *  using a perspective heuristic there made the snap pre-filter reject
+   *  vertices well inside the screen-space snap radius on zoomed-out
+   *  ortho views (Top/Front drafting), killing point snapping on dense
+   *  models. Perspective uses the actual FOV. */
+  private worldUnitsPerPixel(camera: any, camDist: number, viewportHeight: number): number {
+    const h = Math.max(1, viewportHeight);
+    if (camera?.projection === 'orthographic' && typeof camera._orthoSize === 'number') {
+      return (2 * camera._orthoSize) / h;
+    }
+    const fovDeg = typeof camera?.fov === 'number' ? camera.fov : 45;
+    return (2 * camDist * Math.tan((fovDeg * Math.PI) / 360)) / h;
+  }
+
   findSnapPoint(
     screenX: number, screenY: number,
     worldPoint: { x: number; y: number; z: number } | null,
@@ -1860,7 +1875,9 @@ export class SceneBridge {
         const camDist = worldPoint ? Math.sqrt(
           (worldPoint.x - camPos.x) ** 2 + (worldPoint.y - camPos.y) ** 2 + (worldPoint.z - camPos.z) ** 2,
         ) : 30;
-        const radius = Math.max(0.05, camDist * snapRadiusPx * 0.002);
+        // Pre-filter only — 2x safety margin; the precise screen-space
+        // distance check afterwards provides the real 15px accuracy.
+        const radius = Math.min(200, Math.max(0.05, this.worldUnitsPerPixel(camera, camDist, viewportHeight) * snapRadiusPx * 2));
         gridCandidates = this.snapGrid.queryRay(gridRay.origin, gridRay.direction, radius, camDist * 2);
       }
     }
@@ -1902,7 +1919,8 @@ export class SceneBridge {
         const camDist = worldPoint ? Math.sqrt(
           (worldPoint.x - camPos.x) ** 2 + (worldPoint.y - camPos.y) ** 2 + (worldPoint.z - camPos.z) ** 2
         ) : 20;
-        maxWorldDist = camDist * snapRadiusPx * 0.002; // Approximate screen-to-world scale
+        // Pre-filter only — 2x safety margin over the true per-pixel scale
+        maxWorldDist = this.worldUnitsPerPixel(camera, camDist, viewportHeight) * snapRadiusPx * 2;
       }
     }
 
