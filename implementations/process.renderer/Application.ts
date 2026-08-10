@@ -1150,14 +1150,9 @@ export class Application implements IApplication {
     try {
       const ext = result.filePath.split('.').pop()?.toLowerCase();
       if (ext === 'skp') {
-        this.emitProgress('Converting SKP file...', -1);
-        const converted = await (window.api as any).invoke('file:convert-skp', { filePath: result.filePath, data: result.data });
-        if (converted) {
-          await this.importOBJ(converted.data, converted.filePath, { rotateSkp: true });
-        } else {
-          console.error('Failed to convert SKP file');
-          return;
-        }
+        const converted = await this.convertSkpWithProgress(result.filePath, result.data);
+        if (!converted) return;
+        await this.importOBJ(converted.data, converted.filePath, { rotateSkp: true });
       } else if (ext === 'dd' || ext === 'skc' || ext === 'draftdown') {
         // Native DraftDown binary format (magic 'SKCF'). Deserialize directly
         // into the existing document, then resync the scene + DraftDown API.
@@ -1342,6 +1337,31 @@ export class Application implements IApplication {
       mtl: enc.encode(mtlLines.join('\n')).buffer,
       textures,
     };
+  }
+
+  /** Convert a .skp via the conversion service with an elapsed-time progress
+   *  ticker (job-based conversions of big models take minutes) and a visible
+   *  error instead of a silent no-op when conversion fails. */
+  private async convertSkpWithProgress(
+    filePath: string,
+    data: ArrayBuffer | undefined,
+  ): Promise<{ data: ArrayBuffer; filePath: string } | null> {
+    const started = Date.now();
+    this.emitProgress('Converting model...', -1);
+    const ticker = window.setInterval(() => {
+      const s = Math.round((Date.now() - started) / 1000);
+      const t = s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+      this.emitProgress(`Converting model... ${t} (large models can take several minutes)`, -1);
+    }, 5000);
+    try {
+      const converted = await (window.api as any).invoke('file:convert-skp', { filePath, data });
+      if (converted && 'data' in converted) return converted;
+      const reason = (converted as any)?.error ?? 'The conversion service did not return a result.';
+      window.alert(`Failed to convert model:\n${reason}`);
+      return null;
+    } finally {
+      window.clearInterval(ticker);
+    }
   }
 
   private emitProgress(message: string, progress = -1, done = false) {
@@ -1655,12 +1675,8 @@ export class Application implements IApplication {
       const skpData = await resp.arrayBuffer();
       console.log(`[loadSkpFromUrl] Downloaded ${(skpData.byteLength / 1024).toFixed(0)}KB`);
 
-      this.emitProgress('Converting SKP file...', -1);
-      const converted = await window.api.invoke('file:convert-skp', { filePath: url.split('/').pop() || 'model.skp', data: skpData });
-      if (!converted) {
-        console.error('[loadSkpFromUrl] SKP conversion returned null');
-        return;
-      }
+      const converted = await this.convertSkpWithProgress(url.split('/').pop() || 'model.skp', skpData);
+      if (!converted) return;
       console.log(`[loadSkpFromUrl] Converted, OBJ size: ${(converted.data.byteLength / 1024).toFixed(0)}KB`);
 
       await this.importOBJ(converted.data, converted.filePath, { rotateSkp: true });
@@ -1682,8 +1698,7 @@ export class Application implements IApplication {
     const ext = result.format?.toLowerCase() || result.filePath?.split('.').pop()?.toLowerCase();
     try {
       if (ext === 'skp') {
-        this.emitProgress('Converting SKP file...', -1);
-        const converted = await (window.api as any).invoke('file:convert-skp', { filePath: result.filePath, data: result.data });
+        const converted = await this.convertSkpWithProgress(result.filePath, result.data);
         if (converted) {
           await this.importOBJ(converted.data, converted.filePath, { rotateSkp: true });
         }

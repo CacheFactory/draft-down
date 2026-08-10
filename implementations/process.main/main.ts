@@ -19,6 +19,7 @@ import {
   DEFAULT_PREFERENCES,
   MenuAction,
 } from '../../src/core/ipc-types';
+import { convertSkpViaService } from '../../src/core/skp-convert-client';
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -318,27 +319,13 @@ function registerIpcHandlers(): void {
     }
 
     console.log(`[skp-convert] Uploading ${skpBuffer.byteLength} bytes to ${url}`);
-    let zipBuffer: Buffer;
-    try {
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          file: skpBuffer.toString('base64'),
-          filename: path.basename(args.filePath) || 'model.skp',
-        }),
-      });
-      if (!resp.ok) {
-        const errText = await resp.text().catch(() => resp.statusText);
-        console.error('[skp-convert] service returned', resp.status, errText);
-        return null;
-      }
-      const ab = await resp.arrayBuffer();
-      zipBuffer = Buffer.from(ab);
-    } catch (e) {
-      console.error('[skp-convert] request failed:', e);
-      return null;
+    const result = await convertSkpViaService(
+      url, skpBuffer.toString('base64'), path.basename(args.filePath) || 'model.skp');
+    if ('error' in result) {
+      console.error('[skp-convert] conversion failed:', result.error);
+      return { error: result.error };
     }
+    const zipBuffer: Buffer = Buffer.from(result.zip);
 
     // Unpack the ZIP into a per-conversion temp directory so MTL + textures sit
     // next to the OBJ (so the OBJ importer's relative-path lookups resolve).

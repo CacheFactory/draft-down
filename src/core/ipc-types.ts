@@ -90,7 +90,7 @@ export interface MainProcessAPI {
   'native:boolean': (args: { op: 'union' | 'subtract' | 'intersect'; meshA: { vertices: Array<{ x: number; y: number; z: number }>; faces: number[][] }; meshB: { vertices: Array<{ x: number; y: number; z: number }>; faces: number[][] } }) =>
     Promise<{ ok: boolean; mesh?: { vertices: Array<{ x: number; y: number; z: number }>; faces: number[][] }; error?: string }>;
   'native:step-import': (args: { data: ArrayBuffer }) => Promise<ArrayBuffer>;
-  'file:convert-skp': (args: { filePath: string; data?: ArrayBuffer }) => Promise<{ data: ArrayBuffer; filePath: string } | null>;
+  'file:convert-skp': (args: { filePath: string; data?: ArrayBuffer }) => Promise<{ data: ArrayBuffer; filePath: string } | { error: string } | null>;
   'file:convert-dwg': (args: { direction: 'dwg2dxf' | 'dxf2dwg'; data: ArrayBuffer }) => Promise<ArrayBuffer | null>;
   'app:get-version': () => Promise<string>;
   'app:get-user-data-path': () => Promise<string>;

@@ -4,6 +4,7 @@
 
 import type { WindowAPI, MainProcessAPI, RendererEvents, UserPreferences } from '../core/ipc-types';
 import { DEFAULT_PREFERENCES } from '../core/ipc-types';
+import { bytesToBase64, convertSkpViaService } from '../core/skp-convert-client';
 
 type EventHandler<K extends keyof RendererEvents> = (data: RendererEvents[K]) => void;
 
@@ -189,28 +190,13 @@ export class WebPlatformBridge implements WindowAPI {
       }
 
       try {
-        // Send SKP to Lambda as base64
-        const base64 = btoa(
-          new Uint8Array(skpData).reduce((s, b) => s + String.fromCharCode(b), '')
-        );
-
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            file: base64,
-            filename: args.filePath || 'model.skp',
-          }),
-        });
-
-        if (!resp.ok) {
-          const err = await resp.json().catch(() => ({ error: resp.statusText }));
-          console.error('[WebPlatformBridge] SKP conversion failed:', err);
-          return null;
+        const base64 = bytesToBase64(new Uint8Array(skpData));
+        const result = await convertSkpViaService(url, base64, args.filePath || 'model.skp');
+        if ('error' in result) {
+          console.error('[WebPlatformBridge] SKP conversion failed:', result.error);
+          return { error: result.error };
         }
-
-        // Response is a ZIP file containing OBJ + MTL + textures
-        const zipData = await resp.arrayBuffer();
+        const zipData = result.zip;
 
         // Unpack ZIP using browser-native DecompressionStream or manual ZIP parsing
         const files = await this.unpackZip(zipData);
@@ -240,7 +226,7 @@ export class WebPlatformBridge implements WindowAPI {
         return { data: objData, filePath: objName };
       } catch (err: any) {
         console.error('[WebPlatformBridge] SKP conversion error:', err);
-        return null;
+        return { error: err?.message ?? String(err) };
       }
     },
     'app:get-version': async () => '1.0.0-web',
