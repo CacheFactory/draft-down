@@ -1650,6 +1650,12 @@ export class Application implements IApplication {
     } catch (e) {
       console.error('[import] scene sync FAILED:', e);
     }
+    // Frame the imported model — same reason as the DXF path: a model that
+    // isn't near the origin (or dwarfs the default view) loads successfully
+    // and reads as "nothing loaded" because the camera never looks at it.
+    try { this.viewport.camera.fitToBox(geo.getBoundingBox()); } catch (e) {
+      console.warn('[import] zoom extents failed:', e);
+    }
   }
 
   /** Convert ArrayBuffer to base64 string */

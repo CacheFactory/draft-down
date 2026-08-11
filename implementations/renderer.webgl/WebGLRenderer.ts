@@ -174,10 +174,37 @@ export class WebGLRenderer implements IRenderer {
 
   /** Unregister an entity's Three.js object. */
   unregisterEntityObject(entityId: string): void {
+    // The entity may be deleted WHILE highlighted (eraser removes the hovered
+    // edge, Delete removes the selection). The restore path looks the object
+    // up by id and silently skips missing entities, orphaning the glow tube
+    // right where the erased edge was — purge the artifacts here instead.
+    this._removeHighlightArtifactsById(entityId);
+    this._preSelectionEntityIds.delete(entityId);
+    this._selectedEntityIds.delete(entityId);
     this._entityObjects.delete(entityId);
     // Incremental: remove from pick scene directly instead of full rebuild
     this._removeFromPickScene(entityId);
     this._pickBufferDirty = true;
+  }
+
+  /** Remove highlight leftovers (face overlays, material swap, glow tube) for
+   *  an entity by id — works even after the entity object itself is gone. */
+  private _removeHighlightArtifactsById(id: string): void {
+    const overlays = this._faceHighlightOverlays.get(id);
+    if (overlays) {
+      for (const ov of overlays) ov.parent?.remove(ov);
+      this._faceHighlightOverlays.delete(id);
+    }
+    this._removeBatchedHighlight(id);
+    const saved = this._highlightedObjects.get(id);
+    if (saved) {
+      (saved.obj as any).material = saved.origMaterial;
+      if ((saved.obj as any).__glowTube) {
+        this._returnGlowTube((saved.obj as any).__glowTube);
+        delete (saved.obj as any).__glowTube;
+      }
+      this._highlightedObjects.delete(id);
+    }
   }
 
   /** Register a function to create highlight geometry for a batched face. */
@@ -807,6 +834,9 @@ export class WebGLRenderer implements IRenderer {
         if (prevObj && !this._selectedEntityIds.has(prevId)) {
           this._restoreObject(prevObj);
           restored++;
+        } else if (!prevObj) {
+          // Entity was deleted while pre-selected — drop its glow/overlays.
+          this._removeHighlightArtifactsById(prevId);
         }
         // Remove batched highlight for deselected entities
         this._removeBatchedHighlight(prevId);
