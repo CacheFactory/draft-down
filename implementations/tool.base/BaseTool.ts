@@ -13,6 +13,7 @@ import { snapPlanePointToGrid } from '../../src/core/snap-settings';
 import { customAxes } from '../tool.axes/CustomAxes';
 import { DrawingPlaneAxis, DRAWING_PLANES, getPlaneNormal, getPlaneLabelSuffix } from './drawingPlanes';
 import { rayPlaneIntersect } from './planeGeometry';
+import { dimensionStore } from '../tool.dimension/DimensionStore';
 
 // Re-exported so tools can keep importing everything from one module.
 export { DRAWING_PLANES, getPlaneNormal, getPlaneLabelSuffix } from './drawingPlanes';
@@ -894,6 +895,91 @@ export abstract class BaseTool implements ITool {
       this.viewport.getWidth(), this.viewport.getHeight(),
     );
     return rayPlaneIntersect(ray, plane);
+  }
+
+
+  /** Delete everything currently selected — geometry (with auto-face healing),
+   *  components, dimensions, and construction guides — as one undoable
+   *  transaction. Shared by Select (Delete key) and Eraser (activation with an
+   *  active selection) so both behave identically. Returns entity count. */
+  protected deleteSelectedEntities(): number {
+    const ids = Array.from(this.document.selection.state.entityIds);
+    if (ids.length === 0) return 0;
+    this.beginTransaction('Delete');
+    const geo = this.document.geometry;
+    const sm = this.document.scene as any;
+    const candidateEdgesToReface = new Set<string>();
+    for (const id of ids) {
+      if (dimensionStore.isDimensionEntity(id)) {
+        const dim = dimensionStore.remove(id);
+        if (dim) {
+          for (const lineId of dim.guideLineIds) {
+            this.viewport.renderer.removeGuideLine(lineId);
+          }
+          if (dim.sprite.parent) dim.sprite.parent.remove(dim.sprite);
+          (dim.sprite.material as any).map?.dispose();
+          dim.sprite.material.dispose();
+        }
+        continue;
+      }
+      const renderer = this.viewport.renderer as any;
+      if (renderer.isGuideLine?.(id)) {
+        const data = renderer.getGuideLineData?.(id);
+        if (data) {
+          const hm = this.document.history as any;
+          hm.recordGuideLineRemoval?.({
+            id,
+            start: { ...data.start },
+            end: { ...data.end },
+            color: { ...data.color },
+            dashed: data.dashed,
+          });
+        }
+        renderer.removeGuideLine(id);
+        continue;
+      }
+      if (sm?.components?.has(id)) {
+        const comp = sm.components.get(id);
+        if (comp) {
+          for (const eid of comp.entityIds) {
+            if (geo.getFace(eid)) geo.deleteFace(eid, { rememberDeleted: true });
+            else if (geo.getEdge(eid)) geo.deleteEdge(eid);
+          }
+          sm.explodeComponent(id);
+        }
+        continue;
+      }
+      if (geo.getFace(id)) {
+        const face = geo.getFace(id);
+        if (face) {
+          for (const vid of face.vertexIds) {
+            const adjacent = (geo as any).getVertexEdgeIds?.(vid) ?? [];
+            for (const eid of adjacent) candidateEdgesToReface.add(eid);
+          }
+        }
+        geo.deleteFace(id, { rememberDeleted: true });
+      } else if (geo.getEdge(id)) {
+        const edge = geo.getEdge(id);
+        if (edge) {
+          const adjA = (geo as any).getVertexEdgeIds?.(edge.startVertexId) ?? [];
+          const adjB = (geo as any).getVertexEdgeIds?.(edge.endVertexId) ?? [];
+          for (const eid of adjA) if (eid !== id) candidateEdgesToReface.add(eid);
+          for (const eid of adjB) if (eid !== id) candidateEdgesToReface.add(eid);
+        }
+        geo.deleteEdge(id);
+      } else if (geo.getVertex(id)) {
+        geo.deleteVertex(id);
+      }
+    }
+    for (const eid of candidateEdgesToReface) {
+      if (geo.getEdge(eid)) {
+        (geo as any).tryAutoFaceForEdge?.(eid);
+      }
+    }
+    this.document.selection.clear();
+    this.commitTransaction();
+    window.dispatchEvent(new CustomEvent('geometry-changed'));
+    return ids.length;
   }
 
   /** True when the event carries a hard POINT snap — the kinds the viewport

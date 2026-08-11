@@ -853,13 +853,15 @@ function createMainWindow(): BrowserWindow {
       nodeIntegration: false,
       preload: path.join(__dirname, 'preload.js'),
       sandbox: false, // needed for native module access via preload
+      backgroundThrottling: !process.env.DRAFTDOWN_HEADLESS ? true : false,
     },
     show: false,
   });
 
-  // Graceful show when ready
+  // Graceful show when ready. DRAFTDOWN_HEADLESS keeps the window hidden —
+  // e2e runs drive it via Playwright without windows appearing on screen.
   win.once('ready-to-show', () => {
-    win.show();
+    if (!process.env.DRAFTDOWN_HEADLESS) win.show();
   });
 
   // Load the renderer entry point

@@ -18,7 +18,14 @@ export class EraserTool extends BaseTool {
   activate(): void {
     super.activate();
     this.isDragging = false;
-    this.setStatus('Click on edges or faces to delete them. Drag to erase multiple.');
+    // Activating the eraser with an active selection erases the selection
+    // immediately (same code path as the Delete key, one undo step).
+    const n = this.deleteSelectedEntities();
+    if (n > 0) {
+      this.setStatus(`Erased ${n} selected ${n === 1 ? 'entity' : 'entities'}. Click or drag to erase more.`);
+    } else {
+      this.setStatus('Click on edges or faces to delete them. Drag to erase multiple.');
+    }
   }
 
   deactivate(): void {

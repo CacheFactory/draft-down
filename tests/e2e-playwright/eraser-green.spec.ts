@@ -173,3 +173,53 @@ test('erasing a hovered edge does not leak the glow tube', async () => {
   expect(after.edges).toBe(0);
   expect(after.glows.filter((g: any) => g.visible).length).toBe(0);
 });
+
+
+test('activating eraser with a selected edge erases it (and undoes as one step)', async () => {
+  await page.evaluate(() => {
+    const a = (window as any).__debugApp;
+    a.document.selection.clear();
+  });
+  await page.keyboard.press('l');
+  await page.waitForTimeout(200);
+  const a = await screenPos(6, 0, 1);
+  const b = await screenPos(6, 0, 3);
+  await page.mouse.move(a.x, a.y); await page.waitForTimeout(120);
+  await page.mouse.click(a.x, a.y); await page.waitForTimeout(120);
+  await page.mouse.move(b.x, b.y, { steps: 4 }); await page.waitForTimeout(150);
+  await page.mouse.click(b.x, b.y);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+
+  // Select the edge with the Select tool
+  await page.keyboard.press(' ');
+  await page.waitForTimeout(200);
+  const mid = await screenPos(6, 0, 2);
+  await page.mouse.move(mid.x, mid.y, { steps: 3 }); await page.waitForTimeout(150);
+  await page.mouse.click(mid.x, mid.y);
+  await page.waitForTimeout(200);
+  const selCount = await page.evaluate(() => (window as any).__debugApp.document.selection.state.entityIds.size);
+  console.log('selected entities:', selCount);
+  expect(selCount).toBeGreaterThan(0);
+
+  // Click the Eraser TOOLBAR button (the user's exact flow)
+  await page.locator('button:has-text("Eraser")').first().click();
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => {
+    const app = (window as any).__debugApp;
+    return {
+      edges: app.document.geometry.getMesh().edges.size,
+      selected: app.document.selection.state.entityIds.size,
+    };
+  });
+  console.log('after eraser button:', JSON.stringify(after));
+  expect(after.edges).toBe(0);
+  expect(after.selected).toBe(0);
+
+  // One undo restores it
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z');
+  await page.waitForTimeout(300);
+  const undone = await page.evaluate(() => (window as any).__debugApp.document.geometry.getMesh().edges.size);
+  console.log('edges after undo:', undone);
+  expect(undone).toBe(1);
+});

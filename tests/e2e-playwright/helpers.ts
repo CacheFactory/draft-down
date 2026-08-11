@@ -8,6 +8,8 @@ export async function launchApp(): Promise<{ app: ElectronApplication; page: Pag
     env: {
       ...process.env,
       NODE_ENV: 'test',
+      // HEADLESS=1 (or CI) hides the Electron window during tests.
+      ...(process.env.HEADLESS || process.env.CI ? { DRAFTDOWN_HEADLESS: '1' } : {}),
     },
     timeout: 15000,
   });
