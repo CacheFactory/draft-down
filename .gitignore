@@ -9,3 +9,6 @@ test-results/
 settings.yaml
 release/
 .env.signing
+
+# Never commit .skp models (redistribution risk)
+*.skp
